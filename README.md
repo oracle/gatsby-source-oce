@@ -12,6 +12,11 @@ npm install @oracle/gatsby-source-oce
 
 ## Documentation
 
+The OCE Gatsby plugin doesn't have any user-accessible APIs exposed. When configured properly, it will be invoked at either build or develop time by Gatsby and will download your assets and convert them into nodes that you can query with GraphQL.  Two types of nodes are created:
+
+- `OceAsset` nodes. These contain the JSON data for both digital assets and content items.
+- `File` nodes. All digital assets have a metadata section that includes URLs that can be used to access the associated binary data (the original file and any applicable renditions). Gatsby downloads these binaries and stores them as file nodes.
+
 ### Setup
 
 To use gatsby-source-oce in your Gatsby site, add it to the plugins list in your gatsby-config.js file:  
@@ -80,12 +85,7 @@ The data model used for OCE data in Gatsby closely models the JSON data provided
 - Some OCE asset fields are renamed to avoid conflicts with reserved Gatsby node field names. `id` becomes `oceId`,  `fields` becomes `oceFields`, and `type` becomes `oceType`.
 - In traditional OCE usage, a digital asset provides a URL that can be used to retrieve the binary form(s) of the asset from the server. As Gatsby builds static sites, these binary values must be stored locally and are placed in file nodes in the GraphQL store.  To allow these binary forms to be retrieved easily in a site, a link is established between the file nodes and the digital asset nodes. What this means is that it is possible to traverse an `oceAsset` and find the internal Gatsby representations of its binary data without having to load the file nodes as well. All of an `oceAsset`'s  file data can be found under the field `childrenFile`.
 
-### Examples
-
-The OCE Gatsby plugin doesn't have any user-accessible APIs exposed. When configured properly, it will be invoked at either build or develop time by Gatsby and will download your assets and convert them into nodes that you can query with GraphQL.  Two types of nodes are created:
-
-- `OceAsset` nodes. These contain the JSON data for both digital assets and content items.
-- `File` nodes. All digital assets have a metadata section that includes URLs that can be used to access the associated binary data (the original file and any applicable renditions). Gatsby downloads these binaries and stores them as file nodes.
+## Examples
 
 You can query `OceAsset` nodes in the following manner:  
 (This returns the names and types of all assets. Note that the `type` field is internal to Gatsby, so we use the `oceType` field to get the OCE name for each definition )  
