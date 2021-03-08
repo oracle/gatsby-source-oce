@@ -17,7 +17,7 @@ The OCE Gatsby plugin doesn't have any user-accessible APIs exposed. When config
 - `OceAsset` nodes. These contain the JSON data for both digital assets and content items.
 - `File` nodes. All digital assets have a metadata section that includes URLs that can be used to access the associated binary data (the original file and any applicable renditions). Gatsby downloads these binaries and stores them as file nodes.
 
-### Setup
+### Set Up
 
 To use gatsby-source-oce in your Gatsby site, add it to the plugins list in your gatsby-config.js file:  
 
