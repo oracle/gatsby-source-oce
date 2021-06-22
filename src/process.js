@@ -28,12 +28,14 @@ const isDigitalAsset = (e) => (e.typeCategory === 'DigitalAssetType' || (!e.type
 exports.standardizeDates = (entities) => {
   const fixDate = (aggr, kv) => {
     const [key, value] = kv;
-    if (Array.isArray(value)) {
-      aggr[key] = value.map((v) => (isDate(v) ? v.value : v));
-    } else if (isDate(value)) {
-      aggr[key] = value.value;
-    } else {
-      aggr[key] = value;
+    if (value) { // could be null
+      if (Array.isArray(value)) {
+        aggr[key] = value.map((v) => (isDate(v) ? v.value : v));
+      } else if (isDate(value)) {
+        aggr[key] = value.value;
+      } else {
+        aggr[key] = value;
+      }
     }
     return aggr;
   };

@@ -1,6 +1,6 @@
 # About gatsby-source-oce
 
-A Gatsby source plugin for importing data from an [Oracle Content and Experience](https://docs.oracle.com/en/cloud/paas/content-cloud/headless-cms.html) (OCE) service into a [Gatsby](https://www.gatsbyjs.com) application.
+A Gatsby source plugin for importing data from an [Oracle Content Management](https://docs.oracle.com/en/cloud/paas/content-cloud/headless-cms.html) service into a [Gatsby](https://www.gatsbyjs.com) application.
 
 ## Installation
 
@@ -12,7 +12,7 @@ npm install @oracle/gatsby-source-oce
 
 ## Documentation
 
-The OCE Gatsby plugin doesn't have any user-accessible APIs exposed. When configured properly, it will be invoked at either build or develop time by Gatsby and will download your assets and convert them into nodes that you can query with GraphQL.  Two types of nodes are created:
+This Gatsby plugin doesn't have any user-accessible APIs exposed. When configured properly, it will be invoked at either build or develop time by Gatsby and will download your assets and convert them into nodes that you can query with GraphQL.  Two types of nodes are created:
 
 - `OceAsset` nodes. These contain the JSON data for both digital assets and content items.
 - `File` nodes. All digital assets have a metadata section that includes URLs that can be used to access the associated binary data (the original file and any applicable renditions). Gatsby downloads these binaries and stores them as file nodes.
@@ -45,13 +45,13 @@ module.exports = {
 ### Configuration Options
 
 **`contentServer`** (required)  
-This should be set to the base url for your Oracle Content service. The URL uses the pattern `https://<service-name>-<account-name>.cec.ocp.oraclecloud.com` and can be given to you by your OCE service administrator.  
+This should be set to the base url for your Oracle Content Management service. The URL uses the pattern `https://<service-name>-<account-name>.cec.ocp.oraclecloud.com` and can be given to you by your Content service administrator.  
 
 **`channelToken`** (required)  
 This should be set to the publishing channel holding your site's content.  
 
 **`proxyUrl`** [optional] *Defaults to empty which uses a direct connection*  
-This can be used if there is a network proxy between the machine building your Gatsby project and the OCE server. If a proxy is not being used then omit this field or set it to '' (empty string).  
+This can be used if there is a network proxy between the machine building your Gatsby project and the Content server. If a proxy is not being used then omit this field or set it to '' (empty string).  
 
 **`limit`** [optional] *Defaults to 100*  
 This can be used to limit how many assets will be queried from the channel at one time.  

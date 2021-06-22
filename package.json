@@ -1,8 +1,8 @@
 {
   "name": "@oracle/gatsby-source-oce",
-  "description": "Gatsby source plugin for using Oracle Content and Experience (OCE) as a data source",
+  "description": "Gatsby source plugin for using Oracle Content Management as a data source",
   "author": "Oracle America, Inc.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "homepage": "https://github.com/oracle/gatsby-source-oce",
   "repository": {
     "type": "git",
@@ -15,6 +15,7 @@
     "cms",
     "headless-cms",
     "oracle-content-experience",
+    "oracle-content-management",
     "oracle-cloud"
   ],
   "license": "UPL-1.0",
