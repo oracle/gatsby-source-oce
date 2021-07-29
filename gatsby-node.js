@@ -28,14 +28,16 @@ const fetch = require('./src/fetch');
  *         query: '',
  *       },
  *       renditions: 'all',
+ *       staticAssetDownload: false
+ *       staticAssetRootDir: 'asset'
  *     },
  * },
  * ]
  *</code></pre></div>
  * <b>contentServer</b> should be set to the base url for your server. For example: https://oceserver.domain.com<br>
  * <b>channelToken</b> should be set to the publishing channel id on the given server<br>
- * <b>proxyUrl</b> this is only needed if there is a proxy between the local computer and
- * the OCE server. It should be of the form: "http://proxyserver.company.com:port"
+ * <b>proxyUrl</b> (optional) this is only needed if there is a proxy between the local computer and
+ * the OCE server. It should be of the form: "http://proxyserver.company.com:port"<br>
  * <b>limit</b> (optional) How many assets  should be queried from the server in one call.
  * This can generally be left alone <br>
  * <b>query</b> (optional) It is used to limit what class of assets should be downloaded
@@ -57,6 +59,15 @@ const fetch = require('./src/fetch');
  *  If your project uses 100 image assets,the plugin will then download 500+ files from the server
  * (1 original + 4 generated renditions, plus all custom renditions)
  * This is a waste of bandwidth unless you plan to use the oce renditions directly in your site.
+ * <br>
+ * <b>staticAssetDownload</b> (optional) should be set to true if you want to download assets as
+ * files to be included via urls in your site. If it is set to the default value of false the
+ * binary files will be placed in the Gatsby cache and will be accessible via GraphQL<br>
+ * <b>staticAssetRootDir</b> this setting is only used if staticAssetDownload is true. It is used
+ * to set a a prefix that will be prepended to all of the urls for downloaded files. For example:
+ *  If it is set to "content" then the url of a downloaded image called Logo.jpg
+ * will be /content/Logo.jpg.
+ *
  *
  */
 exports.sourceNodes = async (
@@ -72,11 +83,25 @@ exports.sourceNodes = async (
   delete configOptions.plugins;
 
   // plugin code goes here...
-  console.log('Using OCE plugin with the options: ', configOptions);
 
   const {
-    contentServer, channelToken, proxyUrl = '', items: { limit } = 100, items: { query } = '', renditions = 'custom', debug = false,
+    contentServer, channelToken, proxyUrl = '', items: { limit } = 100, items: { query } = '', auth = '', preview = false, renditions = 'custom',
+    staticAssetDownload = false, staticAssetRootDir = 'assets', debug = false,
   } = configOptions;
+
+  console.log('Using OCE plugin with the options: ', {
+    contentServer,
+    channelToken,
+    proxyUrl,
+    limit,
+    query,
+    auth: `${auth.length} characters`,
+    preview,
+    renditions,
+    staticAssetDownload,
+    staticAssetRootDir,
+    debug,
+  });
   try {
     if (proxyUrl !== '') {
       try {
@@ -87,7 +112,8 @@ exports.sourceNodes = async (
         console.log(`ERROR ${e}`);
       }
     }
-    let entities = await fetch.all(contentServer, channelToken, limit, query, debug);
+    let entities = await fetch.all(contentServer, channelToken, limit, query,
+      auth, preview, debug);
     // tidy up the data for further processing
     entities = entities.filter((e) => e != null && (typeof e === 'object'));
     entities = process.cleanUp(entities);
@@ -100,16 +126,30 @@ exports.sourceNodes = async (
     // Generate unique Gatsby ids for indexing
     entities = process.createGatsbyIds(createNodeId, entities, channelToken);
 
+    if (staticAssetDownload === true || staticAssetDownload === 'true') {
+      console.log('Starting static download');
+      await process.prepareForStaticDownload({ staticAssetRootDir });
+      await process.downloadMediaFilesToStaticDir({
+        entities,
+        staticAssetRootDir,
+        renditions,
+        auth,
+      });
+      console.log('Ending static download');
+    } else {
     // Get a copy of all digital asset files (.jpg, .png, etc...) and make Gatsby nodes for them
-    entities = await process.downloadMediaFiles({
-      entities,
-      store,
-      cache,
-      createNode,
-      createNodeId,
-      touchNode,
-      renditions,
-    });
+      entities = await process.downloadMediaFiles({
+        entities,
+        store,
+        cache,
+        createNode,
+        createNodeId,
+        touchNode,
+        renditions,
+        auth,
+      });
+    }
+
     console.log('Completed download of assets');
     // Create nodes for all the downloaded assets
     await process.createNodesFromEntities({ entities, createNode, createContentDigest });

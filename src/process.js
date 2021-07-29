@@ -1,3 +1,4 @@
+/* eslint-disable no-plusplus */
 /**
  * Copyright (c) 2021 Oracle and/or its affiliates.
  * Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
@@ -9,6 +10,10 @@
 /* eslint-disable no-shadow */
 
 const { createRemoteFileNode } = require('gatsby-source-filesystem');
+const fs = require('fs').promises;
+const { createWriteStream } = require('fs');
+const { Headers } = require('node-fetch');
+const fetch = require('node-fetch');
 
 exports.cleanUp = (entities) => entities.map((item) => {
   delete item.links;
@@ -83,7 +88,7 @@ exports.moveFieldsUp = (entities) => entities
 
 // const pretty = (o) => JSON.stringify(o, null, 2);
 
-const getMediaList = (element, renditions) => {
+const getMediaList = (element, renditions, staticRootDir = null) => {
   const result = [];
   const baseKey = `oce-media-${element.id}`;
   // Get the asset name less the extension
@@ -94,9 +99,15 @@ const getMediaList = (element, renditions) => {
   result.push({
     key: baseKey.concat('-native'),
     name: `${name}`,
+    staticName: element.name,
+    staticSubDir: '',
     url: element.native,
     reference: element,
   });
+  // Only do this if we are downloading the asset to be referenced as a public url in the site
+  if (staticRootDir) {
+    element.staticURL = `/${staticRootDir}/${element.name}`;
+  }
 
   // Now loop through renditions and grab the first version of each. The name of the rendition
   // is the asset name with a suffix of -renditionType (eq -Thumbnail)
@@ -108,15 +119,103 @@ const getMediaList = (element, renditions) => {
         result.push({
           key: baseKey.concat(`${e.name}`),
           name: `${e.name}-${name}`,
+          staticName: element.name,
+          staticSubDir: `/${e.name}`,
           url: `${e.formats[0].links[0].href}`,
           reference: e,
         });
+        // Only do this if we are downloading the asset to be referenced as a public url in the site
+        if (staticRootDir) {
+          e.staticURL = `/${staticRootDir}/${e.name}/${element.name}`;
+        }
       }
     });
   }
   return result;
 };
 
+// This is used to create the directory used to store assets downloaded from the server.
+exports.prepareForStaticDownload = async ({ staticAssetRootDir }) => {
+  const fullPath = `./public/${staticAssetRootDir}`;
+  console.log(`Creating static path${fullPath}`);
+
+  try {
+    await fs.mkdir(fullPath, { recursive: true });
+  } catch (e) {
+    console.log("Couldn't create storage dir");
+  }
+};
+
+// Async file download to public folder.
+async function downloadToPublic(
+  fileUrl, storagePath, storageName, auth,
+) {
+  // Make the subdirectory to store the file
+  try {
+    await fs.mkdir(storagePath, { recursive: true });
+  } catch (e) {
+    console.log(`Couldn't create dir${storagePath}`);
+  }
+
+  // Download the file
+  let headers = '';
+  if (auth !== '') {
+    headers = new Headers({
+      Authorization: `${auth}`,
+      Accept: '*/*',
+    });
+  }
+
+  console.log(`Downloading file ${fileUrl}`);
+  const res = await fetch(fileUrl, { headers });
+  return new Promise((resolve, reject) => {
+    const fileStream = createWriteStream(`${storagePath}/${storageName}`);
+    res.body.pipe(fileStream);
+    res.body.on('error', (err) => {
+      console.log(`Error downloading file ${fileUrl} ||${storageName}`);
+      reject(err);
+    });
+    fileStream.on('finish', () => {
+      console.log(`Finished downloading file ${fileUrl} || ${storageName}\n\n`);
+      resolve();
+    });
+  });
+}
+
+// Used to download digital asset data to the static directory processed by gatsby-file
+exports.downloadMediaFilesToStaticDir = async ({
+  entities,
+  staticAssetRootDir,
+  renditions,
+  auth,
+}) => {
+  const dataItemMap = new Map();
+  // Build a map of files that we need to download
+
+  for (let idx = 0; idx < entities.length; idx++) {
+    const e = entities[idx];
+    if (isDigitalAsset(e)) {
+      const dataItemList = getMediaList(e, renditions, staticAssetRootDir);
+      for (let mediaIndex = 0; mediaIndex < dataItemList.length; mediaIndex++) {
+        const mediaObject = dataItemList[mediaIndex];
+        const storagePath = `./public/${staticAssetRootDir}/${mediaObject.staticSubDir}`;
+        const storageName = `${mediaObject.staticName}`;
+        const fileUrl = mediaObject.url;
+
+        dataItemMap.set(fileUrl, { fileUrl, storagePath, storageName });
+      }
+    }
+  }
+
+  const promises = [];
+  dataItemMap.forEach(async (value) => {
+    promises.push(downloadToPublic(value.fileUrl, value.storagePath, value.storageName, auth));
+  });
+
+  await Promise.all(promises);
+};
+
+// Used to download digital asset data to the cache
 exports.downloadMediaFiles = async ({
   entities,
   store,
@@ -125,6 +224,7 @@ exports.downloadMediaFiles = async ({
   createNodeId,
   touchNode,
   renditions,
+  auth,
 }) => Promise.all(
   entities.map(async (e) => {
     if (isDigitalAsset(e)) {
@@ -150,10 +250,17 @@ exports.downloadMediaFiles = async ({
         // If we don't have cached data, download the file
         if (!fileNodeID) {
           try {
-            let fileNode = null;
             console.log(`downloading mediaFile ${mediaObject.url}`);
+            let fileNode = null;
+            // If auth is defined, the download will be from a preview (management) call or
+            // from a secure channel.
+            let httpHeaders = '';
+            if (auth !== '') {
+              httpHeaders = { Authorization: `${auth}` };
+            }
             fileNode = await createRemoteFileNode({
               url: mediaObject.url,
+              httpHeaders,
               store,
               cache,
               createNode,
@@ -170,7 +277,7 @@ exports.downloadMediaFiles = async ({
               });
             }
           } catch (error) {
-            console.log(`ERROR!${error}`);
+            console.log(`ERROR: Downloading media file !${error}`);
             // Ignore
           }
         }

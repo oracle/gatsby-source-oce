@@ -6,6 +6,7 @@
 /* eslint-disable no-console */
 /* eslint-disable no-await-in-loop */
 const fetch = require('node-fetch');
+const { Headers } = require('node-fetch');
 const fs = require('fs').promises;
 
 /**
@@ -23,7 +24,7 @@ const fs = require('fs').promises;
  * data retrieved from the OCE server.
  */
 
-exports.all = async (contentServer, channelToken, limit, query, debug) => {
+exports.all = async (contentServer, channelToken, limit, query, auth, preview, debug) => {
   try {
     await fs.rmdir('.data', { recursive: true });
   } catch (err) {
@@ -32,33 +33,62 @@ exports.all = async (contentServer, channelToken, limit, query, debug) => {
   if (debug) {
     await fs.mkdir('.data');
   }
-  const fetchLimit = ((limit != null && limit > 0) ? limit : 10);
 
-  const fetchQuery = query ? `&q=${query}` : '';
-  const allItemsUrl = `${contentServer}/content/published/api/v1.1/items?limit=${fetchLimit}&offset=0&totalResults=true&offset=0&channelToken=${channelToken}${fetchQuery}`;
+  // const pretty = (o) => JSON.stringify(o, null, 2);
 
   const fetchItem = async (id) => {
-    const response = await fetch(
-      `${contentServer}/content/published/api/v1.1/items/${id}?channelToken=${channelToken}&expand=all`,
-    );
-    const item = await response.json();
+    let item = null;
+    const itemUrl = preview === 'true' ? `${contentServer}/content/management/api/v1.1/items/${id}` : `${contentServer}/content/published/api/v1.1/items/${id}?channelToken=${channelToken}&expand=all`;
 
-    // Remove hyphens which can cause issues
-    item.type = item.type.replace('-', '');
-    if (debug) {
-      await fs.writeFile(
-        `.data/${id}.json`,
-        JSON.stringify(item, null, 2),
-        'utf-8',
-      );
+    try {
+      const headers = new Headers({
+        Authorization: `${auth}`,
+        Accept: '*/*',
+      });
+
+      const response = await fetch(itemUrl, { headers });
+      item = await response.json();
+
+      // Remove hyphens which can cause issues
+      item.type = item.type.replace('-', '');
+      if (debug) {
+        await fs.writeFile(
+          `.data/${id}.json`,
+          JSON.stringify(item, null, 2),
+          'utf-8',
+        );
+      }
+    } catch (e) {
+      console.log(`ERROR Download of item ${id} with URL ${itemUrl} ${e} `);
+      throw (e);
     }
     return item;
   };
 
   const fetchAll = async () => {
+    const fetchLimit = ((limit != null && limit > 0) ? limit : 10);
+
+    const fetchQuery = query ? `&q=${query}` : '';
+    const allPublishedItemsUrl = `${contentServer}/content/published/api/v1.1/items?limit=${fetchLimit}&offset=0&totalResults=true&offset=0&channelToken=${channelToken}${fetchQuery}`;
+    const allManagementItemsUrl = `${contentServer}/content/management/api/v1.1/items?limit=${fetchLimit}&offset=0&totalResults=true&offset=0&channelToken=${channelToken}${fetchQuery}`;
+
+    const allItemsUrl = preview === 'true' ? allManagementItemsUrl : allPublishedItemsUrl;
+
     // Fetch a response from the apiUrl
 
-    let response = await fetch(allItemsUrl);
+    let response = null;
+    let headers = '';
+    try {
+      if (auth !== '') {
+        headers = new Headers({
+          Authorization: `${auth}`,
+          Accept: '*/*',
+        });
+      }
+      response = await fetch(allItemsUrl, { headers });
+    } catch (e) {
+      console.log(`ERROR Failed downloading item list using  ${allItemsUrl}`);
+    }
     // Parse the response as JSON
     try {
       const data = await response.json();
@@ -70,8 +100,7 @@ exports.all = async (contentServer, channelToken, limit, query, debug) => {
 
         for (let offset = fetchLimit; offset < totalResults; offset += fetchLimit) {
           const partialQuery = allItemsUrl.replace('&offset=0', `&offset=${offset}`);
-          // console.log(`partialQuery: ${partialQuery}`);
-          response = await fetch(partialQuery);
+          response = await fetch(partialQuery, { headers });
           const partialData = await response.json();
           data.items = data.items.concat(partialData.items);
         }
@@ -93,6 +122,7 @@ exports.all = async (contentServer, channelToken, limit, query, debug) => {
       throw err;
     }
   };
+
   const entities = await fetchAll();
   return entities;
 };

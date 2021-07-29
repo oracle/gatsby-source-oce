@@ -36,6 +36,11 @@ module.exports = {
           query: '',
         },
         renditions: 'none',
+        preview: false,
+        auth: '',
+        staticAssetDownload: 'false'.
+        staticAssetRootDir: 'asset'
+
       },
     },
   ],
@@ -73,22 +78,55 @@ This setting controls which renditions of digital assets will be downloaded. Thi
 
 - `custom` (default) means that only custom renditions will be downloaded.
 - `none` means that only the original data will be downloaded.  
-- `all` means that all of the OCE-generated renditions (*thumbnail*, *small*, etc.) will be downloaded as well as any custom renditions.
+- `all` means that all of the system generated renditions (*thumbnail*, *small*, etc.) will be downloaded as well as any custom renditions.
 
-> NOTE: For each image downloaded, Gatsby will generate multiple renditions of its own to use for responsive display. This means that if you use the `all` value for renditions, Gatsby will generate resized copies of both the original image and for each of the OCE renditions (*thumbnail*, *small*, etc.). This can add a lot of processing time and network load to the build process for support that you may not need. It is recommended that you use the `none` or `custom` option unless you wish to explicitly use the OCE renditions.  
+> NOTE: For each image downloaded, Gatsby will generate multiple renditions of its own to use for responsive display. This means that if you use the `all` value for renditions, Gatsby will generate resized copies of both the original image and for each of the system renditions (*thumbnail*, *small*, etc.). This can add a lot of processing time and network load to the build process for support that you may not need. It is recommended that you use the `none` or `custom` option unless you wish to explicitly use the system renditions.  
+
+**`preview`** [optional]  
+This setting controls whether the client will be retrieving preview (unpublished) data or not. If true, it must be used with the auth parameter.  It defaults to false.
+
+**`auth`** [optional]  
+This setting is used to set authentication tokens required when downloading from a secure publishing channel (preview=false) or preview items. It may use basic auth or
+an OAuth bearer token. It defaults to an empty string.
+
+**`staticAssetDownload`** [optional]  
+This setting is used to make the plugin download binary assets into the public directory of the site as opposed to storing them in the internal Gatsby cache. This allows items such as image files to be referenced as direct URLs rather than using GraphQL to access them. It is used in combination with the staticAssetRootDir (described below). The default value is false which means all data will be in the cache instead. 
+
+**`staticAssetRootDir`** [optional]  
+This setting is ignored unless staticAssetDownload is set to true. This allows a developer to define a directory in the website that will contain all the downloaded assets. This can help to segregate the items coming from the server from other static data.  The default value is "asset", but it can be set to any string that is a valid directory name. 
+
+**`How to use static download:`**  
+  Assume there is a digital asset on the server called Logo.jpg that contains an image to be used in a site.  
+If staticAssetDownload is false then the binary image will be stored in the cache as well as any selected renditions. (See 'renditions' flag above)   These binary files can then be queried and traversed via GraphQL  
+  
+If staticAssetDownload is true and staticAssetRootDir is set to 'server' then the file will be available in the website as: /server/Logo.jpg and could be displayed
+in an \<img\> tag as \<img src="/server/Logo.jpg"\/>  . If the user has chosen to download all the renditions of the digital assets in their site then the following urls
+will be available:   
+/server/Logo.jpg     (the original)  
+/server/Large/Logo.jpg     (the large rendition)  
+/server/Medium/Logo.jpg     (the medium rendition)  
+/server/Small/Logo.jpg     (the small rendition)  
+/server/Thumbnail/Logo.jpg     (the thumbnail rendition)  
+
+If there are any custom renditions, then they will also appear as
+/server/*custom rendition name*/Logo.jpg
+ 
+
+
+
 
 ### Content Model
 
-The data model used for OCE data in Gatsby closely models the JSON data provided by the OCE REST interface. There are a few small exceptions though that are needed to avoid conflicts between Gatsby node reserved fields and OCE data. These include:
+The data model used for content data in Gatsby closely models the JSON data provided by the Oracle Content Management REST interface. There are a few small exceptions though that are needed to avoid conflicts between Gatsby node reserved fields and Oracle Content Management data. These include:
 
 - All assets are typed as `oceAsset` so that they can be distinguished from other assets in GraphQL queries.
-- Some OCE asset fields are renamed to avoid conflicts with reserved Gatsby node field names. `id` becomes `oceId`,  `fields` becomes `oceFields`, and `type` becomes `oceType`.
-- In traditional OCE usage, a digital asset provides a URL that can be used to retrieve the binary form(s) of the asset from the server. As Gatsby builds static sites, these binary values must be stored locally and are placed in file nodes in the GraphQL store.  To allow these binary forms to be retrieved easily in a site, a link is established between the file nodes and the digital asset nodes. What this means is that it is possible to traverse an `oceAsset` and find the internal Gatsby representations of its binary data without having to load the file nodes as well. All of an `oceAsset`'s  file data can be found under the field `childrenFile`.
+- Some Oracle Content Management asset fields are renamed to avoid conflicts with reserved Gatsby node field names. `id` becomes `oceId`,  `fields` becomes `oceFields`, and `type` becomes `oceType`.
+- In traditional Oracle Content Management usage, a digital asset provides a URL that can be used to retrieve the binary form(s) of the asset from the server. As Gatsby builds static sites, these binary values must be stored locally and are placed in file nodes in the GraphQL store.  To allow these binary forms to be retrieved easily in a site, a link is established between the file nodes and the digital asset nodes. What this means is that it is possible to traverse an `oceAsset` and find the internal Gatsby representations of its binary data without having to load the file nodes as well. All of an `oceAsset`'s  file data can be found under the field `childrenFile`.
 
 ## Examples
 
 You can query `OceAsset` nodes in the following manner:  
-(This returns the names and types of all assets. Note that the `type` field is internal to Gatsby, so we use the `oceType` field to get the OCE name for each definition )  
+(This returns the names and types of all assets. Note that the `type` field is internal to Gatsby, so we use the `oceType` field to get the Oracle Content Management name for each definition )  
 
 ```graphql
 {
@@ -124,10 +162,7 @@ Load the information needed to display the image `Banner1.jpg` as a fluid (respo
         rendition
       }
       childImageSharp {
-        fluid(quality: 100) {
-            
-          ...GatsbyImageSharpFluid_withWebp
-        }                
+        gatsbyImageData(quality: 100, layout: FULL_WIDTH)
       }
     }
   }
