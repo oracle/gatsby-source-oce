@@ -88,7 +88,7 @@ exports.moveFieldsUp = (entities) => entities
 
 // const pretty = (o) => JSON.stringify(o, null, 2);
 
-const getMediaList = (element, renditions, staticRootDir = null) => {
+const getMediaList = (element, renditions, staticRootDir = null, staticUrlPrefix = '') => {
   const result = [];
   const baseKey = `oce-media-${element.id}`;
   // Get the asset name less the extension
@@ -106,7 +106,7 @@ const getMediaList = (element, renditions, staticRootDir = null) => {
   });
   // Only do this if we are downloading the asset to be referenced as a public url in the site
   if (staticRootDir) {
-    element.staticURL = `/${staticRootDir}/${element.name}`;
+    element.staticURL = `${staticUrlPrefix}/${staticRootDir}/${element.name}`;
   }
 
   // Now loop through renditions and grab the first version of each. The name of the rendition
@@ -126,7 +126,7 @@ const getMediaList = (element, renditions, staticRootDir = null) => {
         });
         // Only do this if we are downloading the asset to be referenced as a public url in the site
         if (staticRootDir) {
-          e.staticURL = `/${staticRootDir}/${e.name}/${element.name}`;
+          e.staticURL = `${staticUrlPrefix}/${staticRootDir}/${e.name}/${element.name}`;
         }
       }
     });
@@ -186,6 +186,7 @@ async function downloadToPublic(
 exports.downloadMediaFilesToStaticDir = async ({
   entities,
   staticAssetRootDir,
+  staticUrlPrefix,
   renditions,
   auth,
 }) => {
@@ -195,7 +196,7 @@ exports.downloadMediaFilesToStaticDir = async ({
   for (let idx = 0; idx < entities.length; idx++) {
     const e = entities[idx];
     if (isDigitalAsset(e)) {
-      const dataItemList = getMediaList(e, renditions, staticAssetRootDir);
+      const dataItemList = getMediaList(e, renditions, staticAssetRootDir, staticUrlPrefix);
       for (let mediaIndex = 0; mediaIndex < dataItemList.length; mediaIndex++) {
         const mediaObject = dataItemList[mediaIndex];
         const storagePath = `./public/${staticAssetRootDir}/${mediaObject.staticSubDir}`;

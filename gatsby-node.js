@@ -30,6 +30,7 @@ const fetch = require('./src/fetch');
  *       renditions: 'all',
  *       staticAssetDownload: false
  *       staticAssetRootDir: 'asset'
+ *       staticUrlPrefix: ''
  *     },
  * },
  * ]
@@ -66,7 +67,10 @@ const fetch = require('./src/fetch');
  * <b>staticAssetRootDir</b> this setting is only used if staticAssetDownload is true. It is used
  * to set a a prefix that will be prepended to all of the urls for downloaded files. For example:
  *  If it is set to "content" then the url of a downloaded image called Logo.jpg
- * will be /content/Logo.jpg.
+ * will be /content/Logo.jpg.<br>
+ * <b>staticUrlPrefix</b> (optional) should be set equal to the pathPrefix defined in the
+ * gatsby-config.js file. If pathPrefix is not used or staticAssetDownload is false then this
+ * parameter doesn't need to be set.
  *
  *
  */
@@ -86,7 +90,7 @@ exports.sourceNodes = async (
 
   const {
     contentServer, channelToken, proxyUrl = '', items: { limit } = 100, items: { query } = '', auth = '', preview = false, renditions = 'custom',
-    staticAssetDownload = false, staticAssetRootDir = 'assets', debug = false,
+    staticAssetDownload = false, staticAssetRootDir = 'assets', staticUrlPrefix = '', debug = false,
   } = configOptions;
 
   console.log('Using OCE plugin with the options: ', {
@@ -100,6 +104,7 @@ exports.sourceNodes = async (
     renditions,
     staticAssetDownload,
     staticAssetRootDir,
+    staticUrlPrefix,
     debug,
   });
   try {
@@ -132,6 +137,7 @@ exports.sourceNodes = async (
       await process.downloadMediaFilesToStaticDir({
         entities,
         staticAssetRootDir,
+        staticUrlPrefix,
         renditions,
         auth,
       });

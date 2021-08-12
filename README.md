@@ -95,6 +95,12 @@ This setting is used to make the plugin download binary assets into the public d
 **`staticAssetRootDir`** [optional]  
 This setting is ignored unless staticAssetDownload is set to true. This allows a developer to define a directory in the website that will contain all the downloaded assets. This can help to segregate the items coming from the server from other static data.  The default value is "asset", but it can be set to any string that is a valid directory name. 
 
+**`staticUrlPrefix`** [optional]  
+This setting is ignored unless staticAssetDownload is set to true. This needs to be set if the application has a pathPrefix defined in its gatsby-config.js file. In static mode all downloaded files are given a URL relative to the build root (/public) of the application by default. If there is a pathPrefix specified though, then the URLs need to be prefixed with that value as well.  
+For example: If there is a file "logo.png" it might be given a default URL of /server/logo.png . If however, the app uses a pathPrefix of /myApplication, this URL should be changed to /myApplication/server/logo.png.  
+Setting staticUrlPrefix equal to the pathPrefix will cause the plugin to make this adjustment in the Gatsby cache.   
+
+
 **`How to use static download:`**  
   Assume there is a digital asset on the server called Logo.jpg that contains an image to be used in a site.  
 If staticAssetDownload is false then the binary image will be stored in the cache as well as any selected renditions. (See 'renditions' flag above)   These binary files can then be queried and traversed via GraphQL  
