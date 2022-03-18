@@ -1,6 +1,6 @@
 /* eslint-disable no-plusplus */
 /**
- * Copyright (c) 2021 Oracle and/or its affiliates.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates.
  * Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
  */
 
@@ -158,13 +158,12 @@ async function downloadToPublic(
   }
 
   // Download the file
-  let headers = '';
-  if (auth !== '') {
-    headers = new Headers({
-      Authorization: `${auth}`,
-      Accept: '*/*',
-    });
-  }
+  const headers = new Headers({
+    Authorization: `${auth}`,
+    Accept: '*/*',
+    Connection: 'keep-alive',
+    'User-Agent': 'oracle/gatsby-source-oce',
+  });
 
   console.log(`Downloading file ${fileUrl}`);
   const res = await fetch(fileUrl, { headers });

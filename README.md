@@ -38,6 +38,7 @@ module.exports = {
         renditions: 'none',
         preview: false,
         auth: '',
+        oAuthSettings: null,
         staticAssetDownload: 'false'.
         staticAssetRootDir: 'asset'
 
@@ -87,8 +88,19 @@ This setting controls whether the client will be retrieving preview (unpublished
 
 **`auth`** [optional]  
 This setting is used to set authentication tokens required when downloading from a secure publishing channel (preview=false) or preview items. It may use basic auth or
-an OAuth bearer token. It defaults to an empty string.
+an OAuth bearer token. It defaults to an empty string. Note that using this setting with a bearer token will not refresh the token when it is no longer valid. For that
+behavior you need to use the oAuthSettings parameter documented below.
 
+**`oAuthSettings`** [optional]
+This setting is used when using OAUTH to authenticate a secure publishing channel or using preview support. Using this will ensure that a valid OAUTH bearer token will
+be available to the application. The setting takes the form of an object with the following fields:  
+{
+   CLIENT_ID: 'xxxxx',  
+   CLIENT_SECRET: 'xxxxx',  
+   CLIENT_SCOPE_URL: 'xxxxx',  
+   IDP_URL: 'https://identity.server.com'  
+}  
+  
 **`staticAssetDownload`** [optional]  
 This setting is used to make the plugin download binary assets into the public directory of the site as opposed to storing them in the internal Gatsby cache. This allows items such as image files to be referenced as direct URLs rather than using GraphQL to access them. It is used in combination with the staticAssetRootDir (described below). The default value is false which means all data will be in the cache instead. 
 
@@ -187,7 +199,7 @@ vulnerability disclosure process.
 
 ## License
 
-Copyright (c) 2021 Oracle and/or its affiliates.
+Copyright (c) 2021, 2022, Oracle and/or its affiliates.
 
 Released under the Universal Permissive License v1.0 as shown at
 <https://oss.oracle.com/licenses/upl/>.

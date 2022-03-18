@@ -2,7 +2,7 @@
   "name": "@oracle/gatsby-source-oce",
   "description": "Gatsby source plugin for using Oracle Content Management as a data source",
   "author": "Oracle America, Inc.",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "homepage": "https://github.com/oracle/gatsby-source-oce",
   "repository": {
     "type": "git",
@@ -27,7 +27,7 @@
     "lint": "eslint *.js ./src/*.js"
   },
   "dependencies": {
-    "gatsby-source-filesystem": "~2.5.0",
+    "gatsby-source-filesystem": "~3.5.0",
     "global-agent": "~2.1.12",
     "node-fetch": "~2.6.1"
   },

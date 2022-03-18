@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2021 Oracle and/or its affiliates.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates.
  * Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
  */
 
@@ -38,12 +38,14 @@ exports.all = async (contentServer, channelToken, limit, query, auth, preview, d
 
   const fetchItem = async (id) => {
     let item = null;
-    const itemUrl = preview === 'true' ? `${contentServer}/content/management/api/v1.1/items/${id}` : `${contentServer}/content/published/api/v1.1/items/${id}?channelToken=${channelToken}&expand=all`;
+    const itemUrl = preview === true ? `${contentServer}/content/preview/api/v1.1/items/${id}?channelToken=${channelToken}&expand=all` : `${contentServer}/content/published/api/v1.1/items/${id}?channelToken=${channelToken}&expand=all`;
 
     try {
       const headers = new Headers({
         Authorization: `${auth}`,
         Accept: '*/*',
+        Connection: 'keep-alive',
+        'User-Agent': 'oracle/gatsby-source-oce',
       });
 
       const response = await fetch(itemUrl, { headers });
@@ -70,21 +72,21 @@ exports.all = async (contentServer, channelToken, limit, query, auth, preview, d
 
     const fetchQuery = query ? `&q=${query}` : '';
     const allPublishedItemsUrl = `${contentServer}/content/published/api/v1.1/items?limit=${fetchLimit}&offset=0&totalResults=true&offset=0&channelToken=${channelToken}${fetchQuery}`;
-    const allManagementItemsUrl = `${contentServer}/content/management/api/v1.1/items?limit=${fetchLimit}&offset=0&totalResults=true&offset=0&channelToken=${channelToken}${fetchQuery}`;
+    const allPreviewItemsUrl = `${contentServer}/content/preview/api/v1.1/items?limit=${fetchLimit}&offset=0&totalResults=true&offset=0&channelToken=${channelToken}${fetchQuery}`;
 
-    const allItemsUrl = preview === 'true' ? allManagementItemsUrl : allPublishedItemsUrl;
+    const allItemsUrl = preview === true ? allPreviewItemsUrl : allPublishedItemsUrl;
 
     // Fetch a response from the apiUrl
 
     let response = null;
-    let headers = '';
+    const headers = new Headers({
+      Authorization: `${auth}`,
+      Accept: '*/*',
+      Connection: 'keep-alive',
+      'User-Agent': 'oracle/gatsby-source-oce',
+    });
+
     try {
-      if (auth !== '') {
-        headers = new Headers({
-          Authorization: `${auth}`,
-          Accept: '*/*',
-        });
-      }
       response = await fetch(allItemsUrl, { headers });
     } catch (e) {
       console.log(`ERROR Failed downloading item list using  ${allItemsUrl}`);

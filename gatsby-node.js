@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2021 Oracle and/or its affiliates.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates.
  * Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
  */
 
@@ -8,6 +8,7 @@
 const GlobalAgent = require('global-agent');
 const process = require('./src/process');
 const fetch = require('./src/fetch');
+const AuthManagerToken = require('./src/authManager');
 
 /** Main entry point for the plugin (called automatically by Gatsby)
  *  This code will pull assets from an OCE server and create Gatsby
@@ -71,6 +72,17 @@ const fetch = require('./src/fetch');
  * <b>staticUrlPrefix</b> (optional) should be set equal to the pathPrefix defined in the
  * gatsby-config.js file. If pathPrefix is not used or staticAssetDownload is false then this
  * parameter doesn't need to be set.
+ * <b>authStr</b> (optional) This parameter is used to set a fixed bearer token string when
+ * the plugin is connecting to a secure published channel or is used to download preview data.
+ * Note that this token string might have a time limit and will not be renewed by the plugin.
+ * It is ignored if oAuthSettings (see below) is set
+ * <b>oAuthSettings</b> (optional) This parameter defines the connection settings used to
+ * connect to an oAuthServer so that the plugin can get an up-to-date and valid bearer token.
+ * It takes the form if an object with the following fields:
+ *  CLIENT_ID: login id used on OAUTH provider
+ *  CLIENT_SECRET: password used on the OAUTH server
+ *  CLIENT_SCOPE_URL: scope URL for the request
+ *  IDP_URL: URL:  URL used to connect to the OAUTH token provider
  *
  *
  */
@@ -89,9 +101,16 @@ exports.sourceNodes = async (
   // plugin code goes here...
 
   const {
-    contentServer, channelToken, proxyUrl = '', items: { limit } = 100, items: { query } = '', auth = '', preview = false, renditions = 'custom',
+    contentServer, channelToken, proxyUrl = '', items: { limit } = 100, items: { query } = '', authStr = '', oAuthSettings = null, preview = false, renditions = 'custom',
     staticAssetDownload = false, staticAssetRootDir = 'assets', staticUrlPrefix = '', debug = false,
   } = configOptions;
+
+  // Work around some clumsiness if this setting originally came from a .env file
+  let oAuthObj = null;
+  if (oAuthSettings && oAuthSettings.CLIENT_ID && oAuthSettings.CLIENT_SECRET
+    && oAuthSettings.CLIENT_SCOPE_URL && oAuthSettings.IDP_URL) {
+    oAuthObj = oAuthSettings;
+  }
 
   console.log('Using OCE plugin with the options: ', {
     contentServer,
@@ -99,7 +118,8 @@ exports.sourceNodes = async (
     proxyUrl,
     limit,
     query,
-    auth: `${auth.length} characters`,
+    auth: `${authStr.length} characters`,
+    oAuthObj,
     preview,
     renditions,
     staticAssetDownload,
@@ -117,8 +137,13 @@ exports.sourceNodes = async (
         console.log(`ERROR ${e}`);
       }
     }
+
+    // Since Gatsby only uses the OAUTH token for a short time we can
+    // create it once and use it for the download.
+    const oAuthStr = await AuthManagerToken.AuthManagerToken(authStr, oAuthObj);
+
     let entities = await fetch.all(contentServer, channelToken, limit, query,
-      auth, preview, debug);
+      oAuthStr, preview, debug);
     // tidy up the data for further processing
     entities = entities.filter((e) => e != null && (typeof e === 'object'));
     entities = process.cleanUp(entities);
@@ -139,7 +164,7 @@ exports.sourceNodes = async (
         staticAssetRootDir,
         staticUrlPrefix,
         renditions,
-        auth,
+        oAuthStr,
       });
       console.log('Ending static download');
     } else {
@@ -152,7 +177,7 @@ exports.sourceNodes = async (
         createNodeId,
         touchNode,
         renditions,
-        auth,
+        oAuthStr,
       });
     }
 
