@@ -24,7 +24,7 @@ const fs = require('fs').promises;
  * data retrieved from the OCE server.
  */
 
-exports.all = async (contentServer, channelToken, limit, query, auth, preview, debug) => {
+exports.all = async (contentServer, channelToken, limit, query, oAuthStr, preview, debug) => {
   try {
     await fs.rmdir('.data', { recursive: true });
   } catch (err) {
@@ -42,7 +42,7 @@ exports.all = async (contentServer, channelToken, limit, query, auth, preview, d
 
     try {
       const headers = new Headers({
-        Authorization: `${auth}`,
+        Authorization: `${oAuthStr}`,
         Accept: '*/*',
         Connection: 'keep-alive',
         'User-Agent': 'oracle/gatsby-source-oce',
@@ -80,7 +80,7 @@ exports.all = async (contentServer, channelToken, limit, query, auth, preview, d
 
     let response = null;
     const headers = new Headers({
-      Authorization: `${auth}`,
+      Authorization: `${oAuthStr}`,
       Accept: '*/*',
       Connection: 'keep-alive',
       'User-Agent': 'oracle/gatsby-source-oce',

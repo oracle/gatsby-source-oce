@@ -148,7 +148,7 @@ exports.prepareForStaticDownload = async ({ staticAssetRootDir }) => {
 
 // Async file download to public folder.
 async function downloadToPublic(
-  fileUrl, storagePath, storageName, auth,
+  fileUrl, storagePath, storageName, oAuthStr,
 ) {
   // Make the subdirectory to store the file
   try {
@@ -159,7 +159,7 @@ async function downloadToPublic(
 
   // Download the file
   const headers = new Headers({
-    Authorization: `${auth}`,
+    Authorization: `${oAuthStr}`,
     Accept: '*/*',
     Connection: 'keep-alive',
     'User-Agent': 'oracle/gatsby-source-oce',
@@ -187,7 +187,7 @@ exports.downloadMediaFilesToStaticDir = async ({
   staticAssetRootDir,
   staticUrlPrefix,
   renditions,
-  auth,
+  oAuthStr,
 }) => {
   const dataItemMap = new Map();
   // Build a map of files that we need to download
@@ -209,7 +209,7 @@ exports.downloadMediaFilesToStaticDir = async ({
 
   const promises = [];
   dataItemMap.forEach(async (value) => {
-    promises.push(downloadToPublic(value.fileUrl, value.storagePath, value.storageName, auth));
+    promises.push(downloadToPublic(value.fileUrl, value.storagePath, value.storageName, oAuthStr));
   });
 
   await Promise.all(promises);
@@ -224,7 +224,7 @@ exports.downloadMediaFiles = async ({
   createNodeId,
   touchNode,
   renditions,
-  auth,
+  oAuthStr,
 }) => Promise.all(
   entities.map(async (e) => {
     if (isDigitalAsset(e)) {
@@ -252,11 +252,11 @@ exports.downloadMediaFiles = async ({
           try {
             console.log(`downloading mediaFile ${mediaObject.url}`);
             let fileNode = null;
-            // If auth is defined, the download will be from a preview (management) call or
+            // If oAuthStr is defined, the download will be from a preview (management) call or
             // from a secure channel.
             let httpHeaders = '';
-            if (auth !== '') {
-              httpHeaders = { Authorization: `${auth}` };
+            if (oAuthStr !== '') {
+              httpHeaders = { Authorization: `${oAuthStr}` };
             }
             fileNode = await createRemoteFileNode({
               url: mediaObject.url,
