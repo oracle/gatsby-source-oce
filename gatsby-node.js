@@ -79,10 +79,10 @@ const AuthManagerToken = require('./src/authManager');
  * <b>oAuthSettings</b> (optional) This parameter defines the connection settings used to
  * connect to an oAuthServer so that the plugin can get an up-to-date and valid bearer token.
  * It takes the form if an object with the following fields:
- *  CLIENT_ID: login id used on OAUTH provider
- *  CLIENT_SECRET: password used on the OAUTH server
- *  CLIENT_SCOPE_URL: scope URL for the request
- *  IDP_URL: URL:  URL used to connect to the OAUTH token provider
+ *  clientId: login id used on OAUTH provider
+ *  clientSecret: password used on the OAUTH server
+ *  clientScopeUrlL: scope URL for the request
+ *  idpUrl: URL:  URL used to connect to the OAUTH token provider
  *
  *
  */
@@ -107,8 +107,8 @@ exports.sourceNodes = async (
 
   // Work around some clumsiness if this setting originally came from a .env file
   let oAuthObj = null;
-  if (oAuthSettings && oAuthSettings.CLIENT_ID && oAuthSettings.CLIENT_SECRET
-    && oAuthSettings.CLIENT_SCOPE_URL && oAuthSettings.IDP_URL) {
+  if (oAuthSettings && oAuthSettings.clientId && oAuthSettings.clientSecret
+    && oAuthSettings.clientScopeUrl && oAuthSettings.idpUrl) {
     oAuthObj = oAuthSettings;
   }
 

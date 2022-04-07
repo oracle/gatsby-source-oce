@@ -15,15 +15,15 @@ const fetch = require('node-fetch');
 
 exports.AuthManagerToken = async (authStr, authObj) => {
   const getBearerAuth = async (oAuthObject) => {
-    // base64 encode CLIENT_ID:CLIENT_SECRET
-    const authString = `${oAuthObject.CLIENT_ID}:${oAuthObject.CLIENT_SECRET}`;
+    // base64 encode clientId:clientSecret
+    const authString = `${oAuthObject.clientId}:${oAuthObject.clientSecret}`;
     const authValue = (Buffer.from(authString)).toString('base64');
 
-    // URL encode the CLIENT_SCOPE_URL
-    const encodedScopeUrl = encodeURIComponent(oAuthObject.CLIENT_SCOPE_URL);
+    // URL encode the clientScopeUrl
+    const encodedScopeUrl = encodeURIComponent(oAuthObject.clientScopeUrl);
 
     // build the full REST end point URL for getting the access token
-    const restURL = new URL('/oauth2/v1/token', oAuthObject.IDP_URL);
+    const restURL = new URL('/oauth2/v1/token', oAuthObject.idpUrl);
 
     // make a request to the server to get the access token
     const response = await fetch(restURL.toString(), {

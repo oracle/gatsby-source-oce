@@ -36,9 +36,12 @@ exports.all = async (contentServer, channelToken, limit, query, oAuthStr, previe
 
   // const pretty = (o) => JSON.stringify(o, null, 2);
 
+  // Handle preview being a string or a boolean
+  const isPreview = (preview && (preview === true || preview === 'true'));
+
   const fetchItem = async (id) => {
     let item = null;
-    const itemUrl = preview === true ? `${contentServer}/content/preview/api/v1.1/items/${id}?channelToken=${channelToken}&expand=all` : `${contentServer}/content/published/api/v1.1/items/${id}?channelToken=${channelToken}&expand=all`;
+    const itemUrl = isPreview === true ? `${contentServer}/content/preview/api/v1.1/items/${id}?channelToken=${channelToken}&expand=all` : `${contentServer}/content/published/api/v1.1/items/${id}?channelToken=${channelToken}&expand=all`;
 
     try {
       const headers = new Headers({
@@ -74,7 +77,7 @@ exports.all = async (contentServer, channelToken, limit, query, oAuthStr, previe
     const allPublishedItemsUrl = `${contentServer}/content/published/api/v1.1/items?limit=${fetchLimit}&offset=0&totalResults=true&offset=0&channelToken=${channelToken}${fetchQuery}`;
     const allPreviewItemsUrl = `${contentServer}/content/preview/api/v1.1/items?limit=${fetchLimit}&offset=0&totalResults=true&offset=0&channelToken=${channelToken}${fetchQuery}`;
 
-    const allItemsUrl = preview === true ? allPreviewItemsUrl : allPublishedItemsUrl;
+    const allItemsUrl = isPreview === true ? allPreviewItemsUrl : allPublishedItemsUrl;
 
     // Fetch a response from the apiUrl
 

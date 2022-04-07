@@ -95,10 +95,10 @@ behavior you need to use the oAuthSettings parameter documented below.
 This setting is used when using OAUTH to authenticate a secure publishing channel or using preview support. Using this will ensure that a valid OAUTH bearer token will
 be available to the application. The setting takes the form of an object with the following fields:  
 {
-   CLIENT_ID: 'xxxxx',  
-   CLIENT_SECRET: 'xxxxx',  
-   CLIENT_SCOPE_URL: 'xxxxx',  
-   IDP_URL: 'https://identity.server.com'  
+   clientId: 'xxxxx',  
+   clientSecret: 'xxxxx',  
+   clientScopeUrl: 'xxxxx',  
+   idpUrl: 'https://identity.server.com'  
 }  
   
 **`staticAssetDownload`** [optional]  
