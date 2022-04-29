@@ -71,59 +71,66 @@ exports.all = async (contentServer, channelToken, limit, query, oAuthStr, previe
   };
 
   const fetchAll = async () => {
-    const fetchLimit = ((limit != null && limit > 0) ? limit : 10);
+  // Fetch a response from the apiUrl
 
-    const fetchQuery = query ? `&q=${query}` : '';
-    const allPublishedItemsUrl = `${contentServer}/content/published/api/v1.1/items?limit=${fetchLimit}&offset=0&totalResults=true&offset=0&channelToken=${channelToken}${fetchQuery}`;
-    const allPreviewItemsUrl = `${contentServer}/content/preview/api/v1.1/items?limit=${fetchLimit}&offset=0&totalResults=true&offset=0&channelToken=${channelToken}${fetchQuery}`;
+    let itemsArray = [];
 
-    const allItemsUrl = isPreview === true ? allPreviewItemsUrl : allPublishedItemsUrl;
-
-    // Fetch a response from the apiUrl
-
+    let fetchLimit = ((limit != null && limit > 0) ? limit : 10);
+    let hasMore = true;
     let response = null;
+    let scrollId = ''; // Used for efficient paging when downloading a large query.
+
     const headers = new Headers({
       Authorization: `${oAuthStr}`,
       Accept: '*/*',
       Connection: 'keep-alive',
       'User-Agent': 'oracle/gatsby-source-oce',
     });
+    console.log('Downloading channel asset list');
+    while (hasMore) {
+      // Used if a query was added for use with the REST API. The default returns all assets
+      const fetchQuery = query ? `&q=${query}` : '&q=(name%20ne%20".*")';
 
-    try {
-      response = await fetch(allItemsUrl, { headers });
-    } catch (e) {
-      console.log(`ERROR Failed downloading item list using  ${allItemsUrl}`);
-    }
-    // Parse the response as JSON
-    try {
-      const data = await response.json();
+      // Build a URL based on whether published or preview data is desired
+      const scrollIdStr = scrollId.length === 0 ? '' : `&scrollId=${scrollId}`;
+      const allItemsUrl = `${contentServer}/content/${isPreview === true ? 'preview' : 'published'}/api/v1.1/items?limit=${fetchLimit}&scroll=true&orderBy=id:asc&channelToken=${channelToken}${fetchQuery}${scrollIdStr}`;
 
-      // Now, if needed loop through the assets and retrieve any remaining ones above the limit.
-
-      if (data.hasMore) {
-        const { totalResults } = data;
-
-        for (let offset = fetchLimit; offset < totalResults; offset += fetchLimit) {
-          const partialQuery = allItemsUrl.replace('&offset=0', `&offset=${offset}`);
-          response = await fetch(partialQuery, { headers });
-          const partialData = await response.json();
-          data.items = data.items.concat(partialData.items);
+      try {
+        console.log(allItemsUrl);
+        response = await fetch(allItemsUrl, { headers });
+        const data = await response.json();
+        // The maximum number of assets the server will return based on configuration
+        fetchLimit = fetchLimit > data.limit ? limit : fetchLimit;
+        if (data.count > 0) {
+          itemsArray = itemsArray.concat(data.items);
+          // The scroll Id is used when making multiple calls to the server api.
+          if (scrollId.length === 0) {
+            scrollId = encodeURIComponent(data.scrollId);
+          }
+        } else {
+          hasMore = false;
+          console.log('Finished Downloading channel asset list');
         }
-
+      } catch (e) {
+        console.log(`ERROR Failed downloading item list using  ${allItemsUrl}`);
+        hasMore = false;
+      }
+    }
+    // Now perform some updates on the data to ensure that it will process properly
+    try {
       // We have to ensure that the types of any of the items don't have any hyphens.
       // Having a hyphen on a GraphQl index type seems to cause  issues.
-      }
-      for (let x = 0; x < data.items.length; x += 1) {
-        data.items[x].type = data.items[x].type.replace('-', '');
+      for (let x = 0; x < itemsArray.length; x += 1) {
+        itemsArray[x].type = itemsArray[x].type.replace('-', '');
       }
 
-      // console.log(JSON.stringify(data, null, 2));
+      // console.log(JSON.stringify(itemsArray, null, 2));
       if (debug) {
-        await fs.writeFile('.data/items.json', JSON.stringify(data), 'utf-8');
+        await fs.writeFile('.data/items.json', JSON.stringify(itemsArray), 'utf-8');
       }
-      return Promise.all(data.items.map((e) => e.id).map(fetchItem));
+      return Promise.all(itemsArray.map((e) => e.id).map(fetchItem));
     } catch (err) {
-      console.log(response);
+      console.log(err);
       throw err;
     }
   };

@@ -2,7 +2,7 @@
   "name": "@oracle/gatsby-source-oce",
   "description": "Gatsby source plugin for using Oracle Content Management as a data source",
   "author": "Oracle America, Inc.",
-  "version": "1.2.2",
+  "version": "1.2.4",
   "homepage": "https://github.com/oracle/gatsby-source-oce",
   "repository": {
     "type": "git",
